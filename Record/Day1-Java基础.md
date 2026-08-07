@@ -181,3 +181,198 @@ static 修饰的成员属于类，不属于某一个具体对象。
 程序启动时对象还没有创建。
 JVM 需要直接通过类名找到并调用 main 方法。
 所以 main 方法必须是 static。
+
+## static 方法 + 非 static 方法 + Java 异常处理
+
+static 方法：
+- 属于类
+- 可以通过 类名.方法名() 调用
+- 不需要先创建对象
+
+普通方法：
+- 属于对象
+- 必须先 new 出对象
+- 再通过 对象名.方法名() 调用
+
+#### static 方法为什么不能直接使用普通成员变量和 this
+
+`static` 方法属于类，可以在没有创建对象的情况下直接调用。而普通成员变量属于对象，`this` 表示当前对象。如果对象还没有创建，`static` 方法就不知道要访问哪个对象的成员变量，也没有所谓的当前对象，所以不能直接使用普通成员变量和 `this`
+
+错误示例：
+
+```java
+class Course {
+    String name;
+    static int count;
+
+    public static void printCount() {
+        System.out.println(count); // 可以，count 属于类
+    }
+
+    public static void printName() {
+        System.out.println(name);      // 错误，name 属于对象
+        System.out.println(this.name); // 错误，static 方法中没有 this
+    }
+}
+```
+
+如果 `static` 方法确实要访问普通成员变量，必须先拿到对象：
+
+```java
+public static void printName(Course course) {
+    System.out.println(course.name);
+}
+```
+
+#### 异常是什么
+
+> 异常是程序运行过程中出现的不正常情况。比如用户输入格式错误、数组下标越界、空指针等。如果异常没有被处理，程序可能会直接中断。
+
+#### try-catch 的作用
+
+`try-catch` 可以捕获程序运行过程中可能出现的异常，避免程序因为异常直接中断。它不是让错误消失，而是让程序有机会进行提示、记录日志或执行补救逻辑
+
+## 多 catch + finally
+
+> 如果一段代码可能出现多种异常，可以使用多个 `catch` 分别捕获不同类型的异常。不同异常对应不同处理逻辑，这样提示更清楚，也更方便排查问题
+
+代码示例
+```
+ try {
+    int num = sc.nextInt();
+    int[] arr = {1, 2, 3};
+    System.out.println(arr[num]);
+} catch (InputMismatchException e) {
+    System.out.println("输入格式错误，请输入数字");
+} catch (ArrayIndexOutOfBoundsException e) {
+    System.out.println("数组下标越界，请输入 0-2 之间的数字");
+}
+```
+
+#### 多 catch 的顺序
+
+多个 `catch` 同时存在时，应该先写子类异常，再写父类异常。因为异常匹配是从上往下执行的，如果先写父类 `Exception`，它会把很多子类异常都捕获掉，后面的具体异常就没有机会执行，甚至会直接编译报错。
+
+代码示例
+```
+try {
+     int age = sc.nextInt();
+} catch (InputMismatchException e) {
+    System.out.println("输入格式错误");
+} catch (Exception e) {
+   System.out.println("其他异常");
+}
+```
+#### finally 的作用
+
+> `finally` 里的代码通常会在 `try-catch` 结束后执行。不管 `try` 中有没有出现异常，也不管异常有没有被 `catch` 捕获，`finally` 通常都会执行
+
+常见用途
+```text
+关闭资源
+释放连接
+关闭文件
+关闭数据库连接
+做收尾操作
+```
+
+对于重复逻辑的代码操作可以将对应部分封装成方法例如：
+
+> 把读取整数和异常处理封装成 `readInt()` 方法，可以复用同一套输入校验逻辑，避免在每个 `nextInt()` 位置重复写 `try-catch`。这样代码更简洁、更容易维护，也能保证所有整数输入位置的异常处理规则一致
+
+## throw + throws + 自定义业务异常
+
+### 自定义业务异常
+
+```java
+package User;
+
+public class BusinessException extends RuntimeException {
+    public BusinessException(String message) {
+        super(message);
+    }
+}
+```
+```text
+BusinessException 专门表示业务规则不满足导致的异常。
+比如用户 id 已存在、用户不存在、参数不合法等。
+```
+UserService层
+```java
+public void addUser(User user) {
+    if (existId(user.getId())) {
+        throw new BusinessException("用户id已存在");
+    }
+    users.add(user);
+}
+```
+Main主函数捕获
+```java
+try {
+    userService.addUser(user);
+} catch (BusinessException e) {
+    System.out.println(e.getMessage());
+}
+```
+```
+新增用户时 id 重复：输出“用户id已存在”
+删除不存在的用户：输出“用户不存在，删除失败”
+修改不存在的用户：输出“用户不存在，修改失败”
+查询不存在的用户：输出“用户不存在”
+```
+
+#### throw 的含义
+
+> `throw` 写在方法内部，表示真正主动抛出一个异常对象。当方法发现当前条件不满足业务规则，自己又不能继续正常完成任务时，就可以主动 `throw` 一个异常，把问题交给调用者处理。
+
+示例
+```
+public void addUser(User user) {
+    if (user == null) {
+        throw new RuntimeException("用户不能为空");
+    }
+}
+```
+
+#### throws 的含义
+`throws` 写在方法声明上，表示这个方法可能会抛出某些异常，提醒调用者处理。
+
+示例
+```
+public void readFile() throws IOException {
+    // 可能出现 IOException
+}
+```
+
+#### 系统异常和业务异常
+```text
+系统异常：
+- 程序运行环境或底层操作出问题
+- 比如空指针、数组越界、数据库连接失败、文件读取失败
+
+业务异常：
+- 用户操作或业务条件不满足规则
+- 比如 id 重复、用户不存在、余额不足、库存不足、权限不足
+```
+
+#### 为什么使用 BusinessException
+`RuntimeException` 太宽泛，只能说明程序运行时出现了异常，但看不出这是业务规则不满足。`BusinessException` 语义更清楚，一看就知道这是业务异常，比如用户 id 已存在、用户不存在、余额不足、权限不足等。
+
+#### 和 Spring Boot 全局异常处理的关系
+
+控制台写法
+```text
+Main 调 UserService
+UserService 抛 BusinessException
+Main catch BusinessException
+Main 输出 e.getMessage()
+```
+
+SpringBoot中
+
+```text
+Controller 调 Service
+Service 抛 BusinessException
+GlobalExceptionHandler 捕获 BusinessException
+统一返回错误响应
+```
