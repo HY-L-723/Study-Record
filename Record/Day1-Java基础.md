@@ -78,3 +78,55 @@ HashMap 是 key-value 结构。
 如果主要是按顺序展示、遍历数据，用 ArrayList。
 
 如果主要是根据唯一标识快速查询、删除、修改数据，用 HashMap。
+
+### HashSet + equals/hashCode + HashMap 底层原理
+
+对于以下代码
+```
+HashSet<User> users = new HashSet<>();
+
+User u1 = new User(1, "张三");
+User u2 = new User(1, "张三");
+
+users.add(u1);
+users.add(u2);
+
+System.out.println(users.size());
+```
+的执行结果为2，是因为此时对于User类并没有重写HashCode和equals方法HashSet底层是根据HashMap实现hashCode() 相同并且 equals() 返回 true才会认为两者相同去重
+因此要重写equals和hashCode代码如下：
+```
+@Override
+public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof User)) return false;
+
+    User user = (User) o;
+    return id == user.id && username.equals(user.username);
+}
+
+@Override
+public int hashCode() {
+    return Objects.hash(id, username);
+}
+```
+HashSet 去重流程：
+hashCode 不同：直接认为不同，放入
+hashCode 相同 + equals 为 false：发生冲突，但不是重复，放入
+hashCode 相同 + equals 为 true：认为重复，不放入
+所以HashCode值相同的也有可能会保留，这种情况就是Hash冲突
+- HashSet 去重依赖 hashCode + equals
+- equals 相等则 hashCode 必须相等
+- hashCode 相等但 equals 不等，属于哈希冲突
+- HashMap 根据 hash 定位桶，所以查询通常很快
+- 冲突严重时，链表可能转红黑树
+- 数组较小时优先扩容，不急着树化
+### == 和 equals的区别
+==：
+- 基本数据类型比较值
+- 引用数据类型比较地址
+
+equals()：
+- 默认比较地址
+- 如果类重写了 equals()，可以按照自定义规则比较内容
+在比较对象时 == 只比较地址，equals默认比较的是地址，但可以重写比较内容
