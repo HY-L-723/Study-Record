@@ -376,3 +376,25 @@ Service 抛 BusinessException
 GlobalExceptionHandler 捕获 BusinessException
 统一返回错误响应
 ```
+
+### switch 的使用场景
+
+`switch` 更适合对同一个变量进行多个固定值匹配的场景，比如菜单编号、状态码、类型编号。`if-else` 更适合复杂条件判断，比如范围判断、多个条件组合判断
+
+### 为什么删除ArrayList元素时推荐普通for
+
+普通`for`可以通过下标明确删除指定位置的元素，并且删除后可以立刻`return`或调整下标。增强`for`本质上使用迭代器遍历，如果在遍历过程中直接调用`users.remove(user)`修改集合结构，容易出现并发修改异常。
+
+### 成功提示应该放在哪里
+
+> 成功提示更适合放在 `Main`。因为当前项目中 `Main` 负责控制台交互和输出提示，`UserService` 负责业务规则，比如新增、删除、修改是否允许执行。
+
+### User、UserService、Main对应哪一层
+
+`User` 是数据模型类，对应 Spring Boot 中的 `Entity` 或 `DTO`；`UserService` 对应 `Service` 层；`Main` 在当前控制台项目里相当于程序入口和交互控制层，思想上接近以后 Spring Boot 中的 `Controller`。
+
+### 为什么业务失败适合抛BusinessException
+
+
+> 业务失败抛 `BusinessException`，可以明确表达“程序没坏，是业务规则不满足”。比如 id 重复、用户不存在、权限不足，这些都不是系统崩溃，而是当前操作不能继续。调用者捕获 `BusinessException` 后，可以统一输出或返回清晰的错误信息。
+
