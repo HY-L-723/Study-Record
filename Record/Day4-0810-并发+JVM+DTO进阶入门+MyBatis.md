@@ -204,3 +204,68 @@ Controller层的`createUser`函数
         return Result.*success*(userService.addUser(createUserRequest));
     }
 ```
+
+## MayBatis实现
+
+对于一个已有数据库的表对应使用MyBatis实现增删改查相应操作的一些步骤：
+- 在SpringBoot项目中连接数据库
+- 在pom文件中引入mysql和mybatis相关依赖
+- 在yml文件或properties文件中写入数据库和mybatis的相关配置
+- 实现和对应表各个字段的类，要求在数据库中使用_连接的字段需要使用驼峰形式实现例如数据库中字段为`user_id`在类中要实现为`userId`
+- 在mapper层实现对应表中的增删改查操作具体实现逻辑与业务查询相关
+- 然后在需要调用增删改查的Service层就可以调用了这样就实现了利用mybatis实现对数据库的操作
+
+### 相关代码示例
+`pom`文件，需要注意的是，引入的依赖必须是当前maven版本和java版本所支持的例如java17以上+springboot3.x需要mybatis3.x版本
+```
+ <!-- MyBatis Spring Boot Starter -->
+        <!-- Source: https://mvnrepository.com/artifact/org.mybatis.spring.boot/mybatis-spring-boot-starter -->
+        <dependency>
+            <groupId>org.mybatis.spring.boot</groupId>
+            <artifactId>mybatis-spring-boot-starter</artifactId>
+            <version>3.0.3</version>
+        </dependency>
+        <!-- MySQL数据库驱动 -->
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+```
+
+`yml`配置文件
+```
+spring:
+  datasource:
+    url: jdbc:mysql://{自己的数据库地址}/{数据库名称}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: {用户名}
+    password: {用户密码}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+```
+>实现增删改查基本操作这么配置即可
+```
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+```
+`mapper`层代码函数返回值根据Service层想要实现的相应功能返回
+```
+@Mapper
+public interface UserMapper {
+
+    @Select("select * from users where id = #{id}")
+    User getUserById(@Param("id") int id);
+
+    @Insert("insert into users(username,nickname,age,created_at) values (#{username},#{nickname},#{age},#{createdAt})")
+    int insertUser(User user);
+
+    @Update("update users set nickname = #{nickname} where id = #{id}")
+    int updateUser(User user);
+
+    @Delete("delete from users where id = #{id}")
+    int deleteUser(@Param("id") int id);
+
+    @Select("select * from users")
+    List<User> getUsers();
+}
+```
