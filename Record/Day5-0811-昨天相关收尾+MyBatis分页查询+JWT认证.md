@@ -264,7 +264,8 @@ public class JwtUtil {
         return Integer.valueOf(claims.getSubject());
     }
 }
-```其中KEY应该写入配置文件因为改代码每一次重启后端都会重新进行创建，这样即使token没过期也会验证失败
+```
+其中KEY应该写入配置文件因为改代码每一次重启后端都会重新进行创建，这样即使token没过期也会验证失败
 jwt内容
 ```
 header：说明 token 类型和签名算法
